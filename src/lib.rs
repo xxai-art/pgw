@@ -1,7 +1,7 @@
 #![feature(async_fn_in_trait)]
 use std::{cmp::min, sync::Arc};
 
-use tokio::{runtime::Handle, sync::RwLock, time};
+use tokio::{sync::RwLock, time};
 pub use tokio_postgres::{
   connect, error::SqlState, types::ToSql, Client, Error, NoTls, Row, Statement, ToStatement,
 };
@@ -151,7 +151,7 @@ impl Pg {
     Self(Arc::new(RwLock::new(_Pg {
       uri: uri.into(),
       _client: None,
-      sql_li: Vec::new().into(),
+      sql_li: Vec::new(),
     })))
   }
 
