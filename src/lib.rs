@@ -33,9 +33,9 @@ impl<T: ToStatement> IntoStatement<T> for T {
   }
 }
 
-impl IntoStatement<Statement> for &Sql {
+impl<T: AsRef<Sql>> IntoStatement<Statement> for T {
   async fn into(self) -> Result<Statement, Error> {
-    let sql = &self.0;
+    let sql = &self.as_ref().0;
     loop {
       if let Some(st) = sql.st.read().as_ref() {
         return Ok(st.clone());
