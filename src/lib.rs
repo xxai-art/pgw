@@ -1,8 +1,7 @@
 #![feature(async_fn_in_trait)]
 use std::{cmp::min, sync::Arc};
 
-use parking_lot::RwLock;
-use tokio::time;
+use tokio::{runtime::Handle, sync::RwLock, time};
 pub use tokio_postgres::{
   connect, error::SqlState, types::ToSql, Client, Error, NoTls, Row, Statement, ToStatement,
 };
@@ -35,12 +34,12 @@ impl<T: ToStatement> IntoStatement<T> for T {
 async fn into_statement(sql: &Sql) -> Result<Statement, Error> {
   let sql = &sql.0;
   loop {
-    if let Some(st) = sql.st.read().as_ref() {
+    if let Some(st) = sql.st.read().await.as_ref() {
       return Ok(st.clone());
     }
 
     let st = sql.pg.prepare(&*sql.sql).await?;
-    *sql.st.write() = Some(st);
+    *sql.st.write().await = Some(st);
   }
 }
 
@@ -74,7 +73,7 @@ macro_rules! client {
     let pg = &$self.0;
     'outer: loop {
       {
-        let pg = &pg.read();
+        let pg = &pg.read().await;
         if let Some(client) = &pg._client {
           loop {
             match $body!(client).await {
@@ -92,7 +91,7 @@ macro_rules! client {
         }
       }
 
-      let mut _pg = pg.write();
+      let mut _pg = pg.write().await;
       if _pg._client.is_some() {
         time::sleep(std::time::Duration::from_millis(100)).await;
         if _pg._client.is_some() {
@@ -118,10 +117,10 @@ macro_rules! client {
                 tracing::error!("❌ {hidden_password_uri} ERROR CODE {code} : {e}");
 
                 if is_close(&e, err_code) {
-                  let mut pg = pg.write();
+                  let mut pg = pg.write().await;
                   pg._client = None;
                   for i in &mut pg.sql_li {
-                    *i.0.st.write() = None;
+                    *i.0.st.write().await = None;
                   }
                   return;
                 }
@@ -232,7 +231,11 @@ impl Pg {
       st: RwLock::new(None),
       pg: self.clone(),
     }));
-    self.0.write().sql_li.push(sql.clone());
+    let sql_clone = sql.clone();
+    let me = self.clone();
+    tokio::task::spawn(async move {
+      me.0.write().await.sql_li.push(sql_clone);
+    });
     sql
   }
 }

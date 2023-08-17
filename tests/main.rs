@@ -3,10 +3,10 @@ use pgw::{Pg, Sql};
 use tokio::time;
 
 lazy_static! {
-  // get postgres connection uri from environment ( without prefix )
-  static ref PG: Pg = Pg::new_with_env("PG_URI");
-  // prepared sql
-  static ref SQL_NSPNAME: Sql = PG.sql("SELECT oid FROM pg_catalog.pg_namespace LIMIT 2");
+    // get postgres connection uri from environment ( without prefix )
+    static ref PG: Pg = Pg::new_with_env("PG_URI");
+    // prepared sql
+    static ref SQL_NSPNAME: Sql = PG.sql("SELECT oid FROM pg_catalog.pg_namespace LIMIT 2");
 }
 use tokio_postgres::types::Oid;
 //
@@ -33,7 +33,7 @@ async fn main() -> anyhow::Result<()> {
     match PG.query(&*SQL_NSPNAME, &[]).await {
       Ok(li) => {
         for i in li {
-          let oid: Oid = i.try_get(0)?;
+          let oid: Oid = i.try_get(0).unwrap();
           dbg!(oid);
         }
       }
@@ -46,7 +46,7 @@ async fn main() -> anyhow::Result<()> {
       .await
     {
       Ok(i) => {
-        let oid: Oid = i.try_get(0)?;
+        let oid: Oid = i.try_get(0).unwrap();
         dbg!(oid);
       }
       Err(err) => {
