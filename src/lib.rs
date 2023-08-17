@@ -86,7 +86,9 @@ macro_rules! client {
       let mut _pg = pg.write();
       if _pg._client.is_some() {
         time::sleep(std::time::Duration::from_millis(100)).await;
-        continue 'outer;
+        if _pg._client.is_some() {
+          continue 'outer;
+        }
       }
       let mut n = 0u64;
       let uri = _pg.uri.clone();
