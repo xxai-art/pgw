@@ -9,7 +9,7 @@ description = "auto reconnect tokio postgres"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [dependencies]
-parking_lot = { version = "0.12.1" }
+parking_lot = { version = "0.12.1", features = ["arc_lock"] }
 tokio = { version = "1.32.0", features = ["macros", "rt", "rt-multi-thread"] }
 tokio-postgres = { package = "xxai-tokio-postgres", version = "0.7.15" }
 tracing = "0.1.37"
