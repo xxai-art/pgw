@@ -4,7 +4,7 @@ use std::{cmp::min, sync::Arc};
 
 use parking_lot::RwLock;
 use tokio::time;
-use tokio_postgres::{
+pub use tokio_postgres::{
   connect, error::SqlState, types::ToSql, Client, Error, NoTls, Row, Statement, ToStatement,
 };
 
