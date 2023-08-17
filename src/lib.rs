@@ -65,11 +65,14 @@ macro_rules! client {
     let pg = &$self.0;
     'outer: loop {
       {
-        if let Some(client) = &pg.read()._client {
+        let pg = &pg.read();
+        if let Some(client) = &pg._client {
           loop {
             match $body!(client).await {
               Ok(r) => return Ok(r),
               Err(err) => {
+                let hidden_password_uri = hidden_password(&pg.uri);
+                tracing::error!("❌ {hidden_password_uri} ERROR {err}");
                 if is_close(&err, err.code()) {
                   break;
                 }
@@ -87,7 +90,6 @@ macro_rules! client {
       }
       let mut n = 0u64;
       let uri = _pg.uri.clone();
-      let hidden_password_uri = hidden_password(&uri);
       loop {
         match connect(&format!("postgres://{}", uri), NoTls).await {
           Ok((client, connection)) => {
@@ -101,6 +103,7 @@ macro_rules! client {
                   Some(code) => code.code(),
                   None => "",
                 };
+                let hidden_password_uri = hidden_password(&uri);
                 tracing::error!("❌ {hidden_password_uri} ERROR CODE {code} : {e}");
 
                 if is_close(&e, err_code) {
@@ -117,6 +120,7 @@ macro_rules! client {
           }
           Err(err) => {
             n += 1;
+            let hidden_password_uri = hidden_password(&uri);
             tracing::error!("❌ RETRY {n} → {hidden_password_uri} : {err}");
             time::sleep(std::time::Duration::from_secs(3)).await;
           }
