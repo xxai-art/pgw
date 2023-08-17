@@ -1,5 +1,4 @@
 #![feature(async_fn_in_trait)]
-
 use std::{cmp::min, sync::Arc};
 
 use parking_lot::RwLock;
@@ -33,17 +32,27 @@ impl<T: ToStatement> IntoStatement<T> for T {
   }
 }
 
+async fn into_statement(sql: &Sql) -> Result<Statement, Error> {
+  let sql = &sql.0;
+  loop {
+    if let Some(st) = sql.st.read().as_ref() {
+      return Ok(st.clone());
+    }
+
+    let st = sql.pg.prepare(&*sql.sql).await?;
+    *sql.st.write() = Some(st);
+  }
+}
+
+impl IntoStatement<Statement> for &Sql {
+  async fn into(self) -> Result<Statement, Error> {
+    into_statement(self).await
+  }
+}
+
 impl<T: AsRef<Sql>> IntoStatement<Statement> for T {
   async fn into(self) -> Result<Statement, Error> {
-    let sql = &self.as_ref().0;
-    loop {
-      if let Some(st) = sql.st.read().as_ref() {
-        return Ok(st.clone());
-      }
-
-      let st = sql.pg.prepare(&*sql.sql).await?;
-      *sql.st.write() = Some(st);
-    }
+    into_statement(self.as_ref()).await
   }
 }
 
