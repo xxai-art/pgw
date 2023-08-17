@@ -233,7 +233,7 @@ impl Pg {
     }));
     let sql_clone = sql.clone();
     let me = self.clone();
-    tokio::task::spawn(async move {
+    futures::executor::block_on(async move {
       me.0.write().await.sql_li.push(sql_clone);
     });
     sql
