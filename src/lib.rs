@@ -85,7 +85,7 @@ macro_rules! client {
 
       let mut _pg = pg.write();
       if _pg._client.is_some() {
-        time::sleep(std::time::Duration::from_secs(1)).await;
+        time::sleep(std::time::Duration::from_millis(100)).await;
         continue 'outer;
       }
       let mut n = 0u64;
@@ -122,7 +122,7 @@ macro_rules! client {
             n += 1;
             let hidden_password_uri = hidden_password(&uri);
             tracing::error!("❌ RETRY {n} → {hidden_password_uri} : {err}");
-            time::sleep(std::time::Duration::from_secs(3)).await;
+            time::sleep(std::time::Duration::from_secs(1)).await;
           }
         }
       }
