@@ -30,4 +30,3 @@ git commit -m "v$NEW_VERSION"
 git pull
 git push
 cargo publish
-git checkout Cargo.lock
