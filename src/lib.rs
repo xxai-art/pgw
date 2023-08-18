@@ -3,7 +3,7 @@ use std::{cmp::min, sync::Arc};
 
 use tokio::{sync::RwLock, time};
 pub use tokio_postgres::{
-  connect, error::SqlState, types::ToSql, Client, Error, NoTls, Row, Statement, ToStatement,
+  self, connect, error::SqlState, types::ToSql, Client, Error, NoTls, Row, Statement, ToStatement,
 };
 
 fn hidden_password(s: &str) -> String {
