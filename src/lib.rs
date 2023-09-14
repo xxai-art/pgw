@@ -64,8 +64,17 @@ pub struct _Pg {
 #[derive(Clone)]
 pub struct Pg(Arc<RwLock<_Pg>>);
 
-fn is_close(err: &Error, err_code: Option<&SqlState>) -> bool {
-  err_code == Some(&SqlState::ADMIN_SHUTDOWN) || err.is_closed()
+fn is_close(err: &Error) -> bool {
+  let code = err.code();
+  code == Some(&SqlState::ADMIN_SHUTDOWN) || err.is_closed()
+}
+
+fn err_code<'a>(err: &'a Error) -> &'a str {
+  let err_code = err.code();
+  match err_code {
+    Some(code) => code.code(),
+    None => "",
+  }
 }
 
 macro_rules! client {
@@ -80,8 +89,9 @@ macro_rules! client {
               Ok(r) => return Ok(r),
               Err(err) => {
                 let hidden_password_uri = hidden_password(&pg.uri);
-                tracing::error!("❌ {hidden_password_uri} ERROR {err}");
-                if is_close(&err, err.code()) {
+                let code = err_code(&err);
+                tracing::error!("❌ {hidden_password_uri} ERROR {code} : {err}");
+                if is_close(&err) {
                   break;
                 }
                 return Err(err);
@@ -108,15 +118,11 @@ macro_rules! client {
             let pg = pg.clone();
             tokio::spawn(async move {
               if let Err(e) = connection.await {
-                let err_code = e.code();
-                let code = match err_code {
-                  Some(code) => code.code(),
-                  None => "",
-                };
+                let code = err_code(&e);
                 let hidden_password_uri = hidden_password(&uri);
-                tracing::error!("❌ {hidden_password_uri} ERROR CODE {code} : {e}");
+                tracing::error!("❌ {hidden_password_uri} ERROR {code} → {e}");
 
-                if is_close(&e, err_code) {
+                if is_close(&e) {
                   let mut pg = pg.write().await;
                   pg._client = None;
                   for i in &mut pg.sql_li {
