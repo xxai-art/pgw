@@ -66,7 +66,7 @@ pub struct Pg(Arc<RwLock<_Pg>>);
 
 fn is_close(err: &Error) -> bool {
   let code = err.code();
-  code == Some(&SqlState::ADMIN_SHUTDOWN) || err.is_closed()
+  code.is_none() || code == Some(&SqlState::ADMIN_SHUTDOWN) || err.is_closed()
 }
 
 fn err_code<'a>(err: &'a Error) -> &'a str {
